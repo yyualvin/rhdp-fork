@@ -1,0 +1,13 @@
+{
+  "job_id": "2607694",
+  "status": "failed",
+  "guid": "blf2j",
+  "catalog_item": "sandbox-ibm",
+  "cluster": "none",
+  "platform": "ibm",
+  "failing_role": "sandbox-ibm",
+  "failing_github_path": "/runner/project/ansible/roles-infra/sandbox-ibm/tasks/remove_ui_access.yml:12",
+  "root_cause_summary": "One or more items failed",
+  "root_cause_category": "unknown",
+  "ticket_match_score": 2
+}

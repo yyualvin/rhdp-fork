@@ -1,0 +1,253 @@
+{
+  "sprints": [
+    {
+      "id": 67822,
+      "name": "Sprint 137"
+    }
+  ],
+  "issues": [
+    {
+      "key": "GPTEINFRA-17046",
+      "summary": "SSL/DNS update: Accelerating Infrastructure Modernization with OpenShift Virtualization (CNV)",
+      "description": "",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-17046",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-17029",
+      "summary": "SSL/DNS update: Red Hat Advanced Developer Suite - Software Supply Chain Workshop",
+      "description": "",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-17029",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-17011",
+      "summary": "SSL/DNS update: Heading to Production with Red Hat Openshift Service Mesh",
+      "description": "",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-17011",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16994",
+      "summary": "Work on Troshka",
+      "description": "",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16994",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16990",
+      "summary": "SSL/DNS update: Migration Toolkit for Applications Workshop",
+      "description": "",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16990",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16989",
+      "summary": "SSL/DNS update: Beyond the Basics: Advanced OpenShift Troubleshooting Techniques (CNV)",
+      "description": "",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16989",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16980",
+      "summary": "SSL/DNS update: Quarkus on OpenShift workshop",
+      "description": "",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16980",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16965",
+      "summary": "showroom.service exits 125 (podman-compose failure) on ocpvdev01",
+      "description": "h2. Problem\n\n{{showroom.service}} fails with exit code 125 from {{showroom-start.sh}} on ocpvdev01. This is a podman-compose failure \u2014 likely SELinux or a timing issue specific to ocpvdev01.\n\nThe containers recover and start via the Ansible role directly, but the systemd service is marked as failed.\n\nh2. Context\n\nReported by Prakhar Srivastava via Slack: https://redhat-internal.slack.com/archives/D07M8U1C0SE/p1776390729062779\n\nFindings from the investigation:\n\n* Bastion IP: 10.0.2.2 (OCP SDN internal)\n* Port 80 listening on the bastion\n* Local curl with correct Host header returns 200\n* External via OCP Router (67.228.103.8) returns 503\n\nTwo separate bugs identified:\n\n# OCP Route \u2192 Service \u2192 Pod routing for port 80 broken on ocpvdev01\n# showroom.service exits 125 on ocpvdev01 (podman-compose error)\n\nh2. Acceptance Criteria\n\n* Investigate the podman-compose failure causing exit code 125\n* Determine if this is SELinux, timing, or container runtime related\n* Ensure showroom.service starts cleanly without relying on Ansible role fallback\n* Verify fix on ocpvdev01\n\nh2. References\n\n* Slack thread: https://redhat-internal.slack.com/archives/D07M8U1C0SE/p1776390729062779",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16965",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16964",
+      "summary": "rhpds/assisted_installer wait_for_hosts module crashes on empty API response (JSONDecodeError)",
+      "description": "h2. Problem\n\nThe {{wait_for_hosts}} module in the {{rhpds/assisted_installer}} Ansible collection (v0.0.9) crashes with a {{JSONDecodeError}} when the Red Hat Assisted Installer API ({{api.openshift.com}}) returns an empty response body.\n\nThis causes OCP cluster provisioning failures for the {{ocp-cluster-cnv-pools}} catalog item (and anything else using this collection for assisted installs on CNV).\n\nh2. Root Cause\n\nIn {{plugins/modules/wait_for_hosts.py}}, the module calls:\n\n{code:python}response = session.get(\n    \"https://api.openshift.com/api/assisted-install/v2/clusters/\" + cluster_id,\n    headers=headers,\n)\nif \"code\" in response.json():  # crashes here{code}\n\nIt does not:\n\n# Check {{response.status_code}} before calling {{.json()}}\n# Handle {{JSONDecodeError}} exceptions\n# Retry on transient API failures\n\nWhen the API returns an empty body (e.g. during a transient hiccup shortly after cluster creation), the module crashes immediately instead of retrying within its existing wait loop.\n\nh2. Evidence\n\n* *AAP2 Job*: 2582633 (failed 2026-06-22 04:37:47 UTC)\n* *Catalog Item*: {{agd_v2/ocp-cluster-cnv-pools}} (component of {{agd_v2/ocp-cluster-cnv}})\n* *Deployer scm_ref*: {{ocp-cnv-pool-1.2.3}}\n* *Collection version*: {{rhpds/assisted_installer}} v0.0.9\n* *Error*: {{requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)}}\n\nh2. Fix\n\nWrap the {{response.json()}} call in a try/except within the existing retry loop:\n\n{code:python}try:\n    data = response.json()\nexcept requests.exceptions.JSONDecodeError:\n    time.sleep(module.params['delay'])\n    retries += 1\n    continue{code}\n\nAlso add {{response.status_code}} checking before parsing JSON.\n\nh2. Repo\n\nhttps://github.com/rhpds/assisted_installer (tag v0.0.9)\n\nFile: {{plugins/modules/wait_for_hosts.py}}\n\nh2. Links\n\n* [https://aap2-prod-us-east-2.aap.infra.demo.redhat.com/#/jobs/2582633|https://aap2-prod-us-east-2.aap.infra.demo.redhat.com/#/jobs/2582633]\n* [https://aap2-prod-us-east-2.aap.infra.demo.redhat.com/#/jobs/playbook/2582636/output|https://aap2-prod-us-east-2.aap.infra.demo.redhat.com/#/jobs/playbook/2582636/output]\n",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16964",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16946",
+      "summary": "SSL/DNS update:  Device Edge Fleet Management with Red Hat Edge Manager (Tech Preview)",
+      "description": "",
+      "status": "Stakeholder Acceptance",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16946",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16879",
+      "summary": "SSL/DNS update: Accelerating Infrastructure Modernization with OpenShift Virtualization (CNV)",
+      "description": "Move to SSLSandbox/DNSSandbox",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16879",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16854",
+      "summary": "Nookbag template local dev fails \u2014 antora-tabs-extension missing from antora-viewer image",
+      "description": "h2. Context\n\nPer Slack thread from @Evan Shortiss (https://redhat-internal.slack.com/archives/C04MLMA15MX/p1781071514097049), running the nookbag showroom template locally with podman using the documented command fails because the {{@andrew-jones/antora-tabs-extension}} plugin is not installed in the {{ghcr.io/juliaaano/antora-viewer}} image.\n\nThe error is:\n\n{noformat}[06:02:26.154] FATAL (antora): Cannot find module '@andrew-jones/antora-tabs-extension'{noformat}\n\nRemoving the extension from {{site.yml}} works around the issue but breaks tab rendering.\n\nh2. Required Actions\n\n# Add {{@andrew-jones/antora-tabs-extension}} to the {{ghcr.io/juliaaano/antora-viewer}} image (coordinate with @Juliano), OR update the nookbag template README to document the official Antora image that includes all required plugins\n# Update the nookbag template README with correct local development instructions (the sample podman command currently does not work out of the box)\n# Consider documenting the official Antora image used in production as the recommended image for local development\n\nh2. References\n\n* Slack thread: https://redhat-internal.slack.com/archives/C04MLMA15MX/p1781071514097049\n* Nookbag template repo: https://github.com/rhpds/showroom_template_nookbag",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16854",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16853",
+      "summary": "[Patrick Rutledge] Access Qualice: Obtain access credentials for the Qualice tool by reviewing the tagged documentation.",
+      "description": "[Patrick Rutledge] Access Qualice: Obtain access credentials for the Qualice tool by reviewing the tagged documentation.",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16853",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16852",
+      "summary": "[Patrick Rutledge] Scan SonarCube: Collaborate with John Apple to perform an additional security scan using SonarCube and the GitHub vulnerability scanner.",
+      "description": "[Patrick Rutledge] Scan SonarCube: Collaborate with John Apple to perform an additional security scan using SonarCube and the GitHub vulnerability scanner.",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16852",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16808",
+      "summary": "Infra: Migrate ODF cron jobs - clean aap2 templates",
+      "description": "Migrate and set up cron jobs currently running on crondeck to AAP2-infra (Ansible Automation Platform).\n\n* Target: ODF checks for the infra02 cluster",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16808",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16807",
+      "summary": "Infra prometheus - move target configuration a git",
+      "description": "* configure prometheus for user workloads (internal and external)\n* scale the cluster correctly\n* add prom to grafana\n* test: add metrics to new prom and check grafana\n* use s3 as a storage backend\n\nTODO (after): need to move metrics over to new cluster.",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16807",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16805",
+      "summary": "Logging: Splunk moves to Sumo Logic 2026",
+      "description": "We are replacing Splunk with new monitoring and logging solutions. Splunk Cloud will be migrated to Sumo Logic by the end of 2026. SignalFx replacement is being finalized and will be announced separately.\u00a0 This decision is part of an effort to align with the broader enterprise strategy.\n\n\n\n* 2026-04-13 is the migration target date\n* 2 weeks before logs will be sent to both splunk and sumologic\n* update documentation",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16805",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16397",
+      "summary": "Tidy up showroom collection, deployer repos",
+      "description": "Need to remove old stuff, \n\n* Old console embed role\n* any unused config in deployer\n* core_workloads remove showroom roles\n\n\n\nagD v1? if we remove then we can\u2019t update agD without moving to the showroom collection.",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16397",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16370",
+      "summary": "Infra: Add Azure to cloud-automations Grafana dashboards",
+      "description": "Add Azure support to the cloud-automations tool in Grafana alongside existing AWS dashboards.\n\n* Azure credentials: Bitwarden secret \"cloud-automations-azure\"\n* Setup docs: https://github.com/rhpds/cloud-automations/blob/main/docs/grafana-setup.md#azure-enforcement-dashboard\n* Tracking spreadsheet: https://docs.google.com/spreadsheets/d/1WKUnqdJiXypxJDs3Ac6b_4tNA-4WcYAwtgn_oA8z1Jw/edit?gid=0#gid=0",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16370",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16365",
+      "summary": "Local dev and gh actions need to respect the fallbacks for site.yml and default-site.yml",
+      "description": "[https://redhat-internal.slack.com/archives/C04MLMA15MX/p1775056825744589|https://redhat-internal.slack.com/archives/C04MLMA15MX/p1775056825744589]",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16365",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16169",
+      "summary": "Inject env vars into showroom containers from agV",
+      "description": "",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16169",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-16098",
+      "summary": "Add click to execute plugin to offical nookbag theme",
+      "description": "h3. Recommendation for the Official Theme\r\n\r\nTo add the \"click to execute\" functionality to the official theme, you would really only need to:\r\n\r\n1. *Add `src/js/08-execute.js`* - the self-contained execute module (194 lines). It's well-isolated with no external dependencies. The code is already compatible since it uses vanilla JS and targets the same Showroom SPA architecture.\r\n\r\n2. *No CSS changes needed* - the official theme already has the same `code.css` styling for `.execute` blocks. The execute script applies its own inline styles dynamically anyway.\r\n\r\n3. *No template/partial changes needed*\u00a0- the script is auto-included in `site.js` by the Gulp build's `+([0-9])-*.js` glob pattern.\r\n\r\nThat's it. The rest of the differences in the user's theme are regressions compared to your official branch (older dependencies, missing accessibility features, inline SVG logo instead of image, synchronous script loading, etc.) - none of which you'd want to bring over.",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-16098",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-15979",
+      "summary": "Monitoring: sandboxes creds on icinga",
+      "description": "* rotate the creds and profiles for aws on the Icinga VM\r\n * create a cron? that updates the sandboxes periodically",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-15979",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-15964",
+      "summary": "Multi user/single user with multi logins showroom",
+      "description": "_Hi Andrew. Not urgent at all. But I noticed that what we have in the Showroom workload right now is too ambiguous. It determines if single or multi-user by looking at the users dictionary. But really the use case where I want a single use cluster but with admin and 1 or many normal users on it does not work that way._\r\n\r\n_When I initially wrote that workload I had a feature gate. Something like {{{}showroom_multi_user: true/false{}}}. I\u2019d appreciate if you could re-introduce that to make it explicit if this is a single or multi user showroom deployment._\r\n\r\n_https://redhat-internal.slack.com/archives/D08BHLADSRL/p1742564056573029_",
+      "status": "New",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-15964",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-15963",
+      "summary": "Review installed packages for VM showroom role",
+      "description": "{code:java}\r\nshowroom_dnf_packages:\r\n\u00a0 - acl\r\n\u00a0 - ansible-core\r\n\u00a0 - git\r\n\u00a0 - podman\r\n\u00a0 - python-devel\r\n\u00a0 - socat\r\n\u00a0 - systemd-container\r\n\u00a0 - unzip {code}\r\nhttps://github.com/agnosticd/showroom/blob/main/roles/vm_workload_showroom/defaults/main.yml#L113",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-15963",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-15962",
+      "summary": "Showroom terminal disconnects",
+      "description": "* A few complaints during RH1\r\n * Implemented tmux during RH1 for Tyrells lab\r\n * Need to look at a robust solution going forward for both VMs and OCP\r\n\r\n\u00a0",
+      "status": "To Do",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-15962",
+      "is_open": true
+    },
+    {
+      "key": "GPTEINFRA-15544",
+      "summary": "Showroom - copy to clipboard from source boxes",
+      "description": "# If we can make the copy icon always show so you know you can copy it without mousing over\r\n # If you can't (or shouldn't) copy it don't display the copy icons ever",
+      "status": "In Progress",
+      "sprint_name": "Sprint 137",
+      "ticket_url": "https://redhat.atlassian.net/browse/GPTEINFRA-15544",
+      "is_open": true
+    }
+  ]
+}

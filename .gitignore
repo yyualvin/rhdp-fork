@@ -52,3 +52,4 @@ deploy/secrets.yaml
 
 # reports
 deploy/batch-rca-automation/reports/
+.working/

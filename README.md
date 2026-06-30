@@ -51,6 +51,24 @@ Start with a normal RCA request:
 
 The root-cause-analysis workflow runs preflight checks and setup guidance first, then runs steps 1-4 automatically (log parse, Splunk correlation, GitHub context fetch), followed by Step 5 analysis.
 
+### Link a job to a Jira ticket
+
+Match a job to an open sprint ticket by job ID (parses `job_<id>.json` from `JOB_LOGS_DIR`):
+
+```text
+/jira-link 2594913
+```
+
+Or via the plugin namespace:
+
+```text
+/aiops-plugin:jira-link 2594913
+```
+
+Rule-based matching runs first; semantic fallback applies when the rule score is below threshold. Prior RCA improves matching but is not required.
+
+**Skill not showing?** The command is `jira-link` (hyphen, not underscore). If you installed from the remote marketplace, run `/plugin` to update/reinstall from this repo, then `/reload-plugins`. Restart Claude Code if the skill was added mid-session.
+
 ### 3) Manual fallback (only if needed)
 
 If preflight setup does not complete in your environment:
@@ -76,6 +94,7 @@ For tracing:
 | [root-cause-analysis](./skills/root-cause-analysis/) | Automated RCA for failed jobs | Log correlation, Splunk + GitHub integration |
 | [context-fetcher](./skills/context-fetcher/) | Fetch job configs and docs | GitHub and Confluence integration |
 | [feedback-capture](./skills/feedback-capture/) | Capture user feedback | Structured storage, categorization |
+| [jira-link](./skills/jira-link/) | Link failed jobs to Jira sprint tickets | Rule scoring, semantic fallback, interactive testing |
 
 ---
 

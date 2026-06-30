@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AIOps skills for log analysis, root cause analysis and operational tasks",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
@@ -19,7 +19,8 @@
         "./skills/context-fetcher",
         "./skills/logs-fetcher",
         "./skills/feedback-capture",
-        "./skills/rca-annotator"
+        "./skills/rca-annotator",
+        "./skills/jira-link"
       ]
     }
   ]
